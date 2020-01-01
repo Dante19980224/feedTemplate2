@@ -1,5 +1,5 @@
 # feedTemplate
-inf scroll w/ react hooks
+inf scroll w/ regular react
 
 ## Work in progress*
 rendering twice somewhere
