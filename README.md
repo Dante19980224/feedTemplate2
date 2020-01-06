@@ -1,8 +1,8 @@
 # feedTemplate
 inf scroll w/ regular react
 
-## Work in progress*
-rendering twice somewhere
+## Finished
+Working template. Will only update if bugs occur in the future.
 
 ### Getting Started
 To install all dependencies
