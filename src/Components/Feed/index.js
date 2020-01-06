@@ -12,6 +12,7 @@ class Feed extends Component {
       pokenum: 1,
       maxNum: 0,
       error: false,
+      errorMsg: undefined,
       hasMore: true,
       isLoading: false
     }
@@ -22,15 +23,17 @@ class Feed extends Component {
       }
 
       if (window.innerHeight + document.documentElement.scrollTop === document.documentElement.offsetHeight) {
-        console.log("did fetch after scroll");
+        // console.log("fetching after scroll");
         this.fetch10();
+        // console.log("fetched after scroll");
       }
     }, 500)
   }
 
   // onload
   componentDidMount(){
-    console.log("component did mount");
+    console.log("component did mount(getmax)");
+    // only get max once.
     this.getMax();
   }
 
@@ -46,18 +49,20 @@ class Feed extends Component {
       isLoading: true
     }, async () => {
       let f10 = this.state.postList;
-      console.log("f10 pre anything: ", f10);
-      let i = this.state.pokenum;
+      // console.log("f10 pre anything: ", f10);
+      let i = 0;
       let currpkm;
-      for(i; i <= 10; i++){
-        if(i > this.state.maxNum){
+      for(i; i < 10; i++){
+        if((i+this.state.pokenum) > this.state.maxNum){
           break;
         }
         try {
-          currpkm = await axios.get(`https://pokeapi.co/api/v2/pokemon/${i}`);
+          currpkm = await axios.get(`https://pokeapi.co/api/v2/pokemon/${i+this.state.pokenum}`);
         } catch (e) {
           this.setState({
-            error: e
+            error: true,
+            errorMsg: e.name+": "+e.message,
+            isLoading: false
           })
           console.log("fetch10 error: ", e);
           break;
@@ -65,13 +70,15 @@ class Feed extends Component {
         f10.push(currpkm.data);
       }
       // console.log("f10 is: ", f10);
-      this.setState({
-        postList: f10,
-        pokenum: i,
-        hasMore: (i<this.state.maxNum),
-        isLoading: false
-      })
-      console.log("f10 post setState: ", f10);
+      if(!this.state.error){
+        this.setState({
+          postList: f10,
+          pokenum: (this.state.pokenum + i),
+          hasMore: (i<this.state.maxNum),
+          isLoading: false
+        })
+      }
+      // console.log("f10 post setState: ", f10);
     })
   }
 
@@ -84,7 +91,7 @@ class Feed extends Component {
         <div>
           <h4>Using POKEAPI /pokemon/:id starting from 1 </h4>
           {this.state.postList.map((item, index) => {
-          console.log(index);
+          // console.log(index);
           return (
             <div className="Feed" key={index}>
               <img src={item.sprites.front_default} alt={"image of "+item.name} />
@@ -95,7 +102,7 @@ class Feed extends Component {
             </div>)
           })}
           <br/>
-          {this.state.error && <div>Error: {this.state.error}</div>}
+          {this.state.error && <div className="ErrorMsg">{this.state.errorMsg}</div>}
           {this.state.isLoading && <div>Loading...</div>}
           {!(this.state.hasMore) && <div>No more items.</div>}
           <br/>
