@@ -8,77 +8,75 @@ class Feed extends Component {
     super(props);
 
     this.state = {
-      postList: [],
-      pokenum: 1,
-      maxNum: 0,
-      error: false,
-      errorMsg: undefined,
-      hasMore: true,
-      isLoading: false
+      postList: [],       // list containing all the posts in Feed
+      postnum: 0,       // index used to iterate db
+      maxNum: 0,      // size of db
+      postLimit: 45,     // there is a limit to how many posts can exist in a Feed. (FB and YT both have limits)
+      error: false,     // error flag
+      errorMsg: undefined,      // error message
+      hasMore: true,      // if there are more posts to load
+      isLoading: false      // if there is a fetching process taking place
     }
 
-    window.onscroll = debounce(() => {
+    window.onscroll = debounce(() => {      // debounce puts a delay between each invocation of event
       if(this.state.error || this.state.isLoading || !(this.state.hasMore)){
-        return;
+        return;     // will not trigger onscroll event if any of the 3 conditions meet
       }
-
-      if (window.innerHeight + document.documentElement.scrollTop === document.documentElement.offsetHeight) {
-        // console.log("fetching after scroll");
+      // innerHeight: Height of browser window(height of the portion of html you can see)
+      // scollTop: 0 when at top of page. Increases as user scrolls down. Decreases as user scrolls up.
+      // offsetHeight: The actual height of the html(height of the entire html, including parts you cannot see)
+      // if user scrolls pass 90% of the page, load more. Could change to other percentage, or subtract a constant.
+      if (window.innerHeight + document.documentElement.scrollTop >= Math.floor(document.documentElement.offsetHeight*.9)) {
         this.fetch10();
-        // console.log("fetched after scroll");
       }
-    }, 500)
+    }, 500)     // half a second delay between invoke
   }
 
   // onload
   componentDidMount(){
-    console.log("component did mount(getmax)");
-    // only get max once.
+    this.setState({
+      postnum: 1      // starting at 1 ONLY because pokeAPI starts at 1
+    })
     this.getMax();
   }
 
-  async getMax(){
+  async getMax(){     // get number of items from api or db and set 'maxNum'
     const maxN = await axios.get("https://pokeapi.co/api/v2/pokemon");
     this.setState({
       maxNum: maxN.data.count
-    }, this.fetch10)
+    }, this.fetch10)    // fetch initial data before any scrolling takes place
   }
 
-  fetch10() {
+  fetch10() {   // fetches 10 items from api and append to 'postList'
     this.setState({
-      isLoading: true
+      isLoading: true         // turn on loading flag
     }, async () => {
       let f10 = this.state.postList;
-      // console.log("f10 pre anything: ", f10);
       let i = 0;
       let currpkm;
       for(i; i < 10; i++){
-        if((i+this.state.pokenum) > this.state.maxNum){
+        if((i+this.state.postnum) > Math.min(this.state.maxNum, this.state.postLimit)){   // not going out of bounds
           break;
         }
         try {
-          currpkm = await axios.get(`https://pokeapi.co/api/v2/pokemon/${i+this.state.pokenum}`);
-        } catch (e) {
+          currpkm = await axios.get(`https://pokeapi.co/api/v2/pokemon/${i+this.state.postnum}`);
+        } catch (e) {       // if error occurs
           this.setState({
-            error: true,
-            errorMsg: e.name+": "+e.message,
-            isLoading: false
+            error: true,        // turn on error flag(set 'error' to true)
+            errorMsg: e.name+": "+e.message,      //  record message(set 'errorMsg' to the error message)
+            isLoading: false    // finished loading(set 'isLoading' to false)
           })
           console.log("fetch10 error: ", e);
-          break;
+          return;     // exit function
         }
         f10.push(currpkm.data);
       }
-      // console.log("f10 is: ", f10);
-      if(!this.state.error){
-        this.setState({
-          postList: f10,
-          pokenum: (this.state.pokenum + i),
-          hasMore: (i<this.state.maxNum),
-          isLoading: false
-        })
-      }
-      // console.log("f10 post setState: ", f10);
+      this.setState({
+        postList: f10,      // updated content list
+        postnum: (this.state.postnum + i),    // updated current index
+        hasMore: (this.state.postnum <Math.min(this.state.maxNum, this.state.postLimit)),     // true if current index is less than limit
+        isLoading: false      // finished loading
+      })
     })
   }
 
@@ -90,21 +88,22 @@ class Feed extends Component {
         <h2>Feed</h2>
         <div>
           <h4>Using POKEAPI /pokemon/:id starting from 1 </h4>
+          <ul id="feedParent"></ul>
           {this.state.postList.map((item, index) => {
-          // console.log(index);
-          return (
-            <div className="Feed" key={index}>
-              <img src={item.sprites.front_default} alt={"image of "+item.name} />
-              <p>ID: {item.id}</p>
-              <p>Name: <b>{item.name}</b></p>
-              <p>Height: {item.height}</p>
-              <p>Weight: {item.weight}</p>
-            </div>)
-          })}
+            return (
+              <div className="Feed" key={index}>
+                <img src={item.sprites.front_default} alt={"image of "+item.name} />
+                <p>ID: {item.id}</p>
+                <p>Name: <b>{item.name}</b></p>
+                <p>Height: {item.height}</p>
+                <p>Weight: {item.weight}</p>
+              </div>)
+            })
+          }
           <br/>
           {this.state.error && <div className="ErrorMsg">{this.state.errorMsg}</div>}
           {this.state.isLoading && <div>Loading...</div>}
-          {!(this.state.hasMore) && <div>No more items.</div>}
+          {(!this.state.hasMore) && <div>No more items</div>}
           <br/>
           </div>
         </div>
