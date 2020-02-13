@@ -26,7 +26,7 @@ class Feed extends Component {
       // scollTop: 0 when at top of page. Increases as user scrolls down. Decreases as user scrolls up.
       // offsetHeight: The actual height of the html(height of the entire html, including parts you cannot see)
       // if user scrolls pass 90% of the page, load more. Could change to other percentage, or subtract a constant.
-      if (window.innerHeight + document.documentElement.scrollTop >= Math.floor(document.documentElement.offsetHeight*.9)) {
+      if (window.innerHeight + document.documentElement.scrollTop >= Math.floor(document.documentElement.scrollHeight*.9)) {
         this.fetch10();
       }
     }, 500)     // half a second delay between invoke
